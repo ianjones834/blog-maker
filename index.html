@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <title>Blog Maker</title>
+    <link rel="stylesheet" href="./assets/bootstrap.min.css">
+    <script src="./assets/bootstrap.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+  </head>
+  <body class="m-1">
+    <h1>Blog Maker</h1>
+    <div class="row m-1">
+    <form id="blog-form" onsubmit="return false;" class="form col">
+      <div class="mb-3">
+        <label class="form-label fw-bold">Title</label>
+        <input class="form-control w-50" id="title" type="text" value="">
+      </div>
+      <div class="mb-3">
+        <label class="form-label fw-bold">Banner Image File Name</label>
+        <input class="form-control w-50" id="banner-img" type="text" value="">
+      </div>
+      <div class="mb-3">
+        <label class="form-label fw-bold">Body</label>
+        <textarea class="form-control w-75"id="body"></textarea>
+      </div>
+      <button type="submit" class="btn btn-primary">Export</button>
+    </form>
+
+    <div class="col">
+      <h2 id="title-display"></h4>
+      <img id="banner-img-display" src="">
+      <h5 id="date-display"></h5>
+      <div>
+        <p id="body-display"></p>
+      </div>
+    </div>
+
+    <script>
+        const now = new Date();
+        const date = `${now.toLocaleString('default', {month: 'long'})} ${now.getDay()}, ${now.getFullYear()}`
+
+        $('input').val('');
+        $('textarea').val('');
+
+        $('#date-display').html(date);
+        $("#blog-form").on('submit', () => {
+          const now = new Date();
+
+          let data = {
+            title: $('#title').val(),
+            banner_img: $('#banner-img').val(),
+            body: $('#body').val(),
+            date: date
+          }
+        });
+
+        $('#title').on('input', () => {
+          console.log($('#title').html())
+          $('#title-display').html($('#title').val())
+        });
+
+        $('#body').on('input', () => {
+          $('#body-display').html($('#body').val());
+        })
+    </script>
+
+  </body>
+</html>
