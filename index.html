@@ -9,6 +9,11 @@
   </head>
   <body class="m-1">
     <h1>Blog Maker</h1>
+
+    <div class="w-25">
+      <input class="form-control" type="file" id="import">
+    </div>
+
     <div class="row m-1">
     <form id="blog-form" onsubmit="return false;" class="form col">
       <div class="mb-3">
@@ -26,7 +31,7 @@
       <button type="submit" class="btn btn-primary">Export</button>
     </form>
 
-    <div class="col">
+    <div class="col border rounded border-black" id="blog-display">
       <h2 id="title-display"></h4>
       <img id="banner-img-display" src="">
       <h5 id="date-display"></h5>
@@ -36,32 +41,71 @@
     </div>
 
     <script>
-        const now = new Date();
-        const date = `${now.toLocaleString('default', {month: 'long'})} ${now.getDay()}, ${now.getFullYear()}`
+        const date = new Date().toLocaleString('default', {month: 'long', day: "numeric", year: "numeric"});
+        const input_ids = ['title', 'banner-img', 'body'];
+        const refresh = () => $('#blog-display').trigger('refresh');
 
         $('input').val('');
         $('textarea').val('');
-
         $('#date-display').html(date);
-        $("#blog-form").on('submit', () => {
-          const now = new Date();
 
-          let data = {
-            title: $('#title').val(),
-            banner_img: $('#banner-img').val(),
-            body: $('#body').val(),
-            date: date
+        $('#blog-display').on('refresh', () => {
+          for (let id of input_ids) {
+            const display = $(`#${id}-display`);
+            const input = $(`#${id}`).val()
+
+            if (id === 'banner-img') {
+              display.attr('src', input)
+            }
+            else {
+              display.html(input);
+            }
           }
         });
 
-        $('#title').on('input', () => {
-          console.log($('#title').html())
-          $('#title-display').html($('#title').val())
+        $("#blog-form").on('submit', () => {
+          const title = $('#title').val();
+          if (title === '') return false;
+
+          let data = {date: date};
+
+          for (let id of input_ids) {
+            data[id] = $(`#${id}`).val();
+          }
+
+          const json = JSON.stringify(data);
+
+          const blob = new Blob([json], {type: 'text/string'});
+          const file = URL.createObjectURL(blob);
+
+          const download = document.createElement('a');
+          download.href = file;
+          download.download = title.replace(' ', '_').toLowerCase() + '.json';
+
+          download.click();
+          URL.revokeObjectURL(file);
         });
 
-        $('#body').on('input', () => {
-          $('#body-display').html($('#body').val());
-        })
+        $('#import').on('change', (e) => {
+          if (e.target.files.length == 0) return;
+
+          const file = e.target.files[0];
+          const reader = new FileReader();
+
+          reader.addEventListener('load', (e) => {
+            const data = JSON.parse(e.target.result);
+
+            for (let id of input_ids) {
+              $(`#${id}`).val(data[id]);
+            }
+
+            refresh();
+          });
+
+          reader.readAsText(file);
+        });
+
+        $('#blog-form input,textarea').on('input', refresh);
     </script>
 
   </body>
