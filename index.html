@@ -8,33 +8,39 @@
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
   </head>
   <body class="m-1">
-    <h1>Blog Maker</h1>
+    <h1 class="mb-3 d-inline-block">Blog Maker</h1>
 
-    <div class="w-50">
+    <div class="mb-3 d-inline-block"><i id="alert" style="display: none;">(Previous Session Restored)</i></div>
+
+    <div class="w-50 mb-3">
       <label for="import" class="btn btn-secondary">Import</label>
-      <input style="display: none;" class="form-control" type="file" id="import" accept="json">
+      <input type="file" name="import" id="import" accept="json" style="display: none;" class="form-control">
     </div>
 
     <div class="row m-1">
     <form id="blog-form" onsubmit="return false;" class="form col">
       <div class="mb-3">
         <label class="form-label fw-bold">Title</label>
-        <input class="form-control w-50" id="title" type="text" value="">
+        <input type="text" name="title" class="form-control w-50">
       </div>
       <div class="mb-3">
         <label class="form-label fw-bold">Banner Image File Link</label>
-        <input class="form-control w-50" id="banner-img" type="text" value="">
+        <input type="text" name="banner-img,src" class="form-control w-50">
+      </div>
+      <div class="mb-3">
+        <label class="form-label fw-bold">Banner Image Alt Text</label>
+        <input type="text" name="banner-img,alt" class="form-control w-50">
       </div>
       <div class="mb-3">
         <label class="form-label fw-bold">Body</label>
-        <textarea class="form-control w-75"id="body"></textarea>
+        <textarea name="body" class="form-control w-75"></textarea>
       </div>
       <button type="submit" class="btn btn-primary">Export</button>
     </form>
 
     <div class="col border rounded border-black" id="blog-display">
       <h2 id="title-display"></h4>
-      <img id="banner-img-display" src="">
+      <img id="banner-img-display" src="" alt="">
       <h5 id="date-display"></h5>
       <div>
         <p id="body-display"></p>
@@ -43,48 +49,56 @@
 
     <script>
         const date = new Date().toLocaleString('default', {month: 'long', day: "numeric", year: "numeric"});
-        const input_ids = ['title', 'banner-img', 'body'];
-        const refresh = () => $('#blog-display').trigger('refresh');
-
-        $('input').val('');
-        $('textarea').val('');
         $('#date-display').html(date);
 
-        $('#blog-display').on('refresh', () => {
-          for (let id of input_ids) {
-            const display = $(`#${id}-display`);
-            const input = $(`#${id}`).val()
+        const getData = () => {
+          const formData = new FormData($('#blog-form')[0]);
 
-            if (id === 'banner-img') {
-              display.attr('src', input)
-            }
-            else {
-              display.html(input);
-            }
+          if (formData.get('title') === '')
+            return false;
+
+          const data = {date: date};
+
+          for (const [name, value] of formData.entries()) {
+            data[name] = value;
           }
+
+          return data;
+        };
+
+        const setData = (json) => {
+          if (json === null)
+            return;
+
+          const data = JSON.parse(json);
+
+          for (let [name, value] of Object.entries(data)) {
+            const input = $(`[name='${name}']`);
+            input.val(value);
+            input.trigger('input');
+          }
+        }
+
+        $('#blog-form input,textarea').on('input', (e) => {
+          const input_name = e.target.name.split(',');
+          const display_element = $(`#${input_name[0]}-display`);
+
+          if (typeof input_name[1] === 'string')
+            display_element.attr(input_name[1], e.target.value);
+          else
+            display_element.html(e.target.value);
         });
 
-        $("#blog-form").on('submit', () => {
-          const title = $('#title').val();
-          if (title === '') return false;
-
-          let data = {date: date};
-
-          for (let id of input_ids) {
-            data[id] = $(`#${id}`).val();
-          }
-
-          const json = JSON.stringify(data);
-
-          const blob = new Blob([json], {type: 'text/string'});
-          const file = URL.createObjectURL(blob);
-
+        $('#blog-form').on('submit', (e) => {
+          const data = getData();
+          const blob = new Blob([JSON.stringify(data)], {type: 'text/string'})
           const download = document.createElement('a');
-          download.href = file;
-          download.download = title.replace(' ', '_').toLowerCase() + '.json';
 
+          download.href = URL.createObjectURL(blob);
+          download.download = data.title.replace(' ', '_').toLowerCase() + '.json';
           download.click();
-          URL.revokeObjectURL(file);
+
+          URL.revokeObjectURL(download.href);
         });
 
         $('#import').on('change', (e) => {
@@ -93,20 +107,17 @@
           const file = e.target.files[0];
           const reader = new FileReader();
 
-          reader.addEventListener('load', (e) => {
-            const data = JSON.parse(e.target.result);
-
-            for (let id of input_ids) {
-              $(`#${id}`).val(data[id]);
-            }
-
-            refresh();
-          });
-
+          reader.addEventListener('load', (e) => setData(e.target.result));
           reader.readAsText(file);
         });
 
-        $('#blog-form input,textarea').on('input', refresh);
+        window.addEventListener('load', () => {
+          setData(localStorage.getItem('previous-draft'));
+          $('#alert').show();
+          setTimeout(() => $('#alert').hide(), 3000);
+        });
+
+        window.addEventListener('beforeunload,reload', () => localStorage.setItem('previous-draft', JSON.stringify(getData())));
     </script>
 
   </body>
